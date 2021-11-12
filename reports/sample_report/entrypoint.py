@@ -5,6 +5,9 @@
 
 # This is a very simple implementation, additional customer- and reseller- related fields
 # can be added
+
+from connect.client import R
+
 HEADERS = ("Subscription ID", "Customer ID", "Quantity", "Calculation")
 # See the diagram in the repo to view axioms based on which the code is written
 
