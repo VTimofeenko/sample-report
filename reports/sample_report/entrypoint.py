@@ -75,12 +75,12 @@ def _get_delta(client) -> int:
 
     The implementation is using a few hardcoded values"""
 
-    price_points = (
+    price_points = list(
         client.ns("pricing")
         .versions["PLV-762-354-876-0001"]  # hardcoded price list version, "4T" price list with four price points
         .points.filter(item__global_id="PRD-620-226-877-0001")  # hardcoded to filter out irrelevant skus
         .values_list("attributes")
-    )
+    )[0]
 
     # In this case, price is the price towards distributor, v.custom_1 is the internal cost
     return int(price_points["attributes"]["price"] - price_points["attributes"]["v.custom_1"])
