@@ -88,7 +88,10 @@ def _get_delta(client) -> int:
 
 def _process_line(request: dict, cost_price_delta: int):
     """The function that builds out the report line by line"""
-    asset = request["asset"]
-    qty = asset["items"][0]["quantity"]  # [0] to filter out irrelevant skus
-
-    return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
+    try:
+        asset = request["asset"]
+        qty = asset["items"][0]["quantity"]  # [0] to filter out irrelevant skus
+        return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
+    except IndexError:
+        # looks like a request does not have items
+        pass
