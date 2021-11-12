@@ -65,7 +65,7 @@ def _get_requests(client, parameters):
         query &= R().events.created.at.ge(parameters["date"]["after"])
         query &= R().events.created.at.ge(parameters["date"]["before"])
 
-    return client.requests.filter(asset_product_id == "PRD-620-226-877", type="purchase", status="approved").filter(
+    return client.requests.filter(asset__product__id="PRD-620-226-877", type="purchase", status="approved").filter(
         query
     )
 
