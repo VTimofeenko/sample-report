@@ -52,7 +52,7 @@ def generate(
     progress = 0
     cost_price_delta = _get_delta(client)
 
-    for request in requests:
+    for request in purchase_requests:
         yield _process_line(request, cost_price_delta)
         progress += 1
         progress_callback(progress, total)
