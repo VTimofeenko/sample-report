@@ -25,6 +25,15 @@
                         "start_col": 1
                     }
                 }
+            ],
+            "parameters": [
+                {
+                    "id":"date",
+                    "type":"date_range",
+                    "name":"Report period",
+                    "description":"Provide the time period to create the report",
+                    "required": true
+                }
             ]
         }
     ]

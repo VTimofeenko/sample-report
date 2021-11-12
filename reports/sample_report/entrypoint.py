@@ -3,11 +3,17 @@
 # Copyright (c) 2021, Vladimir Timofeenko
 # All rights reserved.
 
+# This is a very simple implementation, additional customer- and reseller- related fields
+# can be added
+HEADERS = ("Subscription ID", "Customer ID", "Quantity", "Calculation")
+# See the diagram in the repo to view axioms based on which the code is written
+
+
 def generate(
     client=None,
     input_data=None,
     progress_callback=None,
-    renderer_type='xlsx',
+    renderer_type="xlsx",
     extra_context_callback=None,
 ):
     """
@@ -36,4 +42,47 @@ def generate(
                             renderers.
     :type extra_context_callback: func
     """
-    pass
+    # This report implementation is based on axiom "PR 1-1 subscription"
+    purchase_requests = _get_requests(client, parameters)
+    total = purchase_requests.count()
+    progress = 0
+    cost_price_delta = _get_delta(client)
+
+    for request in requests:
+        yield _process_line(request, cost_price_delta)
+        progress += 1
+        progress_callback(progress, total)
+
+
+def _get_requests(client, parameters):
+    """Retrieves the subscriptions and quantities for which there were purchases in the period"""
+    query = R()
+    if parameters.get("date") and parameters["date"]["after"] != "":
+        query &= R().events.created.at.ge(parameters["date"]["after"])
+        query &= R().events.created.at.ge(parameters["date"]["before"])
+
+    return client.requests.filter(asset_product_id == "PRD-620-226-877", type="purchase", status="approved").filter(
+        query
+    )
+
+
+def _get_delta(client) -> int:
+    """Retrieves the delta between price and cost for a specific product.
+
+    The implementation is using a few hardcoded values"""
+
+    price_points = (
+        client.ns("pricing")
+        .versions["PLV-762-354-876-0001"]  # hardcoded price list version, "4T" price list with four price points
+        .points.filter(item__global_id="PRD-620-226-877-0001")  # hardcoded to filter out irrelevant skus
+        .values_list("attributes")
+    )
+
+    # In this case, price is the price towards distributor, v.custom_1 is the internal cost
+    return int(price_points["attributes"]["price"] - price_points["attributes"]["v.custom_1"])
+
+
+def _process_line(request: dict):
+    """The function that builds out the report line by line"""
+    qty = request["asset"]["items"][0]["quantity"]  # [0] to filter out irrelevant skus
+    return (request["asset"]["id"], request["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
