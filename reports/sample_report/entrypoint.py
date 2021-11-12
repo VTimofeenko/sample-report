@@ -42,6 +42,7 @@ def generate(
                             renderers.
     :type extra_context_callback: func
     """
+    parameters = input_data
     # This report implementation is based on axiom "PR 1-1 subscription"
     purchase_requests = _get_requests(client, parameters)
     total = purchase_requests.count()
