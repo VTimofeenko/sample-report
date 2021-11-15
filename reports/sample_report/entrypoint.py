@@ -47,13 +47,13 @@ def generate(
     """
     parameters = input_data
     # This report implementation is based on axiom "PR 1-1 subscription"
-    purchase_requests = _get_requests(client, parameters)
-    total = purchase_requests.count()
+    sold_assets = _get_requests(client, parameters)
+    total = sold_assets.count()
     progress = 0
     cost_price_delta = _get_delta(client)
 
-    for request in purchase_requests:
-        yield _process_line(request, cost_price_delta)
+    for asset in sold_assets:
+        yield _process_line(asset["asset"], cost_price_delta)
         progress += 1
         progress_callback(progress, total)
 
@@ -61,13 +61,21 @@ def generate(
 def _get_requests(client, parameters):
     """Retrieves the subscriptions and quantities for which there were purchases in the period"""
     query = R()
-    if parameters.get("date") and parameters["date"]["after"] != "":
-        query &= R().events.created.at.ge(parameters["date"]["after"])
-        query &= R().events.created.at.ge(parameters["date"]["before"])
 
-    return client.requests.filter(asset__product__id="PRD-620-226-877", type="purchase", status="approved").filter(
-        query
-    )
+    # will only need purchase requests
+    query &= R().type.eq("purchase")
+    # will only need approved requests
+    query &= R().status.eq("approved")
+    # only for my product
+    query &= R().asset.product.id.eq("PRD-620-226-877")
+
+    if parameters.get("date") and parameters["date"]["after"] != "":
+        # this assumes that the payment is remitted at time of creation
+        # probably a more real-life implementation would rely on effective_date
+        query &= R().created.ge(parameters["date"]["after"])
+        query &= R().created.le(parameters["date"]["before"])
+
+    return client.requests.filter(query)
 
 
 def _get_delta(client) -> int:
@@ -86,12 +94,11 @@ def _get_delta(client) -> int:
     return int(price_points["attributes"]["price"] - price_points["attributes"]["v.custom_1"])
 
 
-def _process_line(request: dict, cost_price_delta: int):
+def _process_line(asset: dict, cost_price_delta: int):
     """The function that builds out the report line by line"""
     try:
-        asset = request["asset"]
-        qty = asset["items"][0]["quantity"]  # [0] to filter out irrelevant skus
-        return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
+        qty = int(asset["items"][0]["quantity"])  # [0] to filter out irrelevant skus
     except IndexError:
-        # looks like a request does not have items
-        pass
+        # to handle some older requests without items
+        qty = 0
+    return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
