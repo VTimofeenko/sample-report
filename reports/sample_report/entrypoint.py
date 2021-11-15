@@ -52,6 +52,9 @@ def generate(
     progress = 0
     cost_price_delta = _get_delta(client)
 
+    # this, combined with start_col: 1 adds header to xlsx
+    yield HEADERS
+
     for asset in sold_assets:
         yield _process_line(asset["asset"], cost_price_delta)
         progress += 1

@@ -20,7 +20,7 @@
                     "description": "Export data in Microsoft Excel 2020 format.",
                     "template": "reports/sample_report/templates/xlsx/template.xlsx",
                     "args": {
-                        "start_row": 2,
+                        "start_row": 1,
                         "start_col": 1
                     }
                 }
