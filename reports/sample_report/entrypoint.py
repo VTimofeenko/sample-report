@@ -8,7 +8,7 @@
 
 from connect.client import R
 
-HEADERS = ("Subscription ID", "Customer ID", "Quantity", "Calculation")
+HEADERS = ("Subscription ID", "Customer ID", "Quantity", "Calculation", "Date created")
 # See the diagram in the repo to view axioms based on which the code is written
 
 
@@ -47,16 +47,17 @@ def generate(
     """
     parameters = input_data
     # This report implementation is based on axiom "PR 1-1 subscription"
-    sold_assets = _get_requests(client, parameters)
-    total = sold_assets.count()
+    purchase_requests = _get_requests(client, parameters)
+    total = purchase_requests.count()
     progress = 0
     cost_price_delta = _get_delta(client)
 
     # this, combined with start_col: 1 adds header to xlsx
     yield HEADERS
+    print(total)
 
-    for asset in sold_assets:
-        yield _process_line(asset["asset"], cost_price_delta)
+    for request in purchase_requests:
+        yield _process_line(request, cost_price_delta)
         progress += 1
         progress_callback(progress, total)
 
@@ -97,11 +98,15 @@ def _get_delta(client) -> int:
     return int(price_points["attributes"]["price"] - price_points["attributes"]["v.custom_1"])
 
 
-def _process_line(asset: dict, cost_price_delta: int):
+def _process_line(request: dict, cost_price_delta: int):
     """The function that builds out the report line by line"""
+
+    asset = request["asset"]
+    created = request["created"]
+
     try:
         qty = int(asset["items"][0]["quantity"])  # [0] to filter out irrelevant skus
     except IndexError:
         # to handle some older requests without items
         qty = 0
-    return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty)
+    return (asset["id"], asset["tiers"]["customer"]["id"], qty, cost_price_delta * qty, created)
